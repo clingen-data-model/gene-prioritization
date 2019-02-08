@@ -28,7 +28,7 @@ This script uses the following files:
   * 'CGD.txt' #From https://research.nhgri.nih.gov/CGD/download/
   * 'curations_export_at_2019-02-01_11_52_06.csv' #From Gene Tracker download (needs log in)
 
-**Gene_Prioritization_Report.py** -
+**Gene_Prioritization_Report.py**
   * Tab#GTR_REPORT: main file
   * Tab#GTR_STATS_AllCGDs: Stats of genes per test for all disease areas
   * Tab#GTR_STATS_SingleCGD: Stats of genes per test for ONLY A SINGLE disease area
