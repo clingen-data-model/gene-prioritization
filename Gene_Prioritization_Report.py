@@ -770,7 +770,7 @@ def main():
     inputFile3 = 'mimTitles.txt' #From https://www.omim.org/downloads/
     inputFile4 = 'mim2gene_medgen.txt' #From https://www.omim.org/downloads/
     inputFile5 = 'MANE.GRCh38.v0.5.summary.txt' #From ftp://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/current/
-    inputFile6 = 'newVCEPGeneList.txt' #Internal file on DropBox Shared U41/ClinVar/ClinVarReports
+    inputFile6 = 'VCEPGeneList.txt' #Internal file on DropBox Shared U41/ClinVar/ClinVarReports
     inputFile7 = 'ClinGen-Gene-Disease-Summary-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
     inputFile8 = 'ClinGen-Dosage-Sensitivity-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
     inputFile9 = 'ClinGen-Clinical-Actionability-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
