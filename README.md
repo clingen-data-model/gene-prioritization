@@ -32,3 +32,6 @@ This script uses the following files:
   * Tab#GTR_REPORT: main file
   * Tab#GTR_STATS_AllCGDs: Stats of genes per test for all disease areas
   * Tab#GTR_STATS_SingleCGD: Stats of genes per test for ONLY A SINGLE disease area
+
+## How to run these scripts
+All scripts are run as 'python3 *filename.py*'.
