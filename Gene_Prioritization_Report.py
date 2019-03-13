@@ -189,6 +189,31 @@ def create_gtrHash(infile):
     return(gtrHash)
 
 
+def add_ConcertGenetics(infile):
+    '''This function adds Concert Genetics test counts to the gtr Hash'''
+
+    with open(infile, 'rt') as input:
+        line = input.readline()
+
+        while line:
+            line = input.readline()
+
+            if not line.startswith('Gene'): #ignore lines that start with #
+                col = re.split(r'\t', line) #split on tabs
+                if not col[0] == '':
+                    geneSym = col[0].rstrip()
+
+                if all(s not in geneSym for s in ['(', 'CHROMOSOM', 'EXOME', 'MUTATION', 'REPEAT', 'GENE', '5P15.2']):
+                   geneSym = gene_check(geneSym.upper())
+                   test_num = int(col[1].rstrip('\n\r'))
+
+                   if geneSym in gtrHash.keys():
+                       gtrHash[geneSym].update({'CGgeneCount': test_num})
+
+    input.close()
+    return(gtrHash)
+
+
 def add_VarCounts(infile):
     '''This function adds ClnVar varID counts to the gtr Hash'''
 
@@ -215,10 +240,7 @@ def add_VarCounts(infile):
 
                         gtrHash[geneSym].update({'GeneID': geneID})
 
-                        if 'no assertion criteria provided' not in revStat and \
-                           'no interpretation for the single variant' not in revStat and \
-                           'no assertion provided' not in revStat:
-                           gtrHash[geneSym]['VarCount'] += 1
+                        gtrHash[geneSym]['VarCount'] += 1
 
                         if 'no assertion criteria provided' not in revStat and \
                            'no interpretation for the single variant' not in revStat and \
@@ -560,25 +582,26 @@ def print_allgenes(outfile):
 
     worksheet.write(0, 0, 'GeneSym')
     worksheet.write(0, 1, 'NCBIGeneID')
-    worksheet.write(0, 2, '#Tests with Gene')
-    worksheet.write(0, 3, 'Indication(s)')
-    worksheet.write(0, 4, 'Condition(s)')
-    worksheet.write(0, 5, 'LabTest(s)')
-    worksheet.write(0, 6, 'Lab(s)')
-    worksheet.write(0, 7, '#ClinVar Variants (1-star or above)')
-    worksheet.write(0, 8, '#P/LP, Drug response or Risk Factor ClinVar Variants (1-star or above)')
-    worksheet.write(0, 9, '#ClinVar Variants (1-star or above with Conflicting interpretations of pathogenicity)')
-    worksheet.write(0, 10, 'MANE SELECT RefSeq')
-    worksheet.write(0, 11, '# or + OMIM IDs')
-    worksheet.write(0, 12, '# or + OMIM Diseases')
-    worksheet.write(0, 13, 'VCEP')
-    worksheet.write(0, 14, 'GCEP(s)')
-    worksheet.write(0, 15, 'Highest GCEP curation status')
-    worksheet.write(0, 16, 'Gene Validity Curation(s)')
-    worksheet.write(0, 17, 'Gene Dosage Curation')
-    worksheet.write(0, 18, 'Actionability Curation')
-    worksheet.write(0, 19, 'CGD manifestations')
-    i = 20
+    worksheet.write(0, 2, '#Concert Genetics Tests with Gene')
+    worksheet.write(0, 3, '#GTR Tests with Gene')
+    worksheet.write(0, 4, 'Indication(s)')
+    worksheet.write(0, 5, 'Condition(s)')
+    worksheet.write(0, 6, 'LabTest(s)')
+    worksheet.write(0, 7, 'Lab(s)')
+    worksheet.write(0, 8, '#ClinVar Variants')
+    worksheet.write(0, 9, '#P/LP, Drug response or Risk Factor ClinVar Variants (1-star or above)')
+    worksheet.write(0, 10, '#ClinVar Variants (1-star or above with Conflicting interpretations of pathogenicity)')
+    worksheet.write(0, 11, 'MANE SELECT RefSeq')
+    worksheet.write(0, 12, '# or + OMIM IDs')
+    worksheet.write(0, 13, '# or + OMIM Diseases')
+    worksheet.write(0, 14, 'VCEP')
+    worksheet.write(0, 15, 'GCEP(s)')
+    worksheet.write(0, 16, 'Highest GCEP curation status')
+    worksheet.write(0, 17, 'Gene Validity Curation(s)')
+    worksheet.write(0, 18, 'Gene Dosage Curation')
+    worksheet.write(0, 19, 'Actionability Curation')
+    worksheet.write(0, 20, 'CGD manifestations')
+    i = 21
     for organ in osystems:
         worksheet.write(0, i, organ + ' (CGD)')
         i += 1
@@ -593,104 +616,110 @@ def print_allgenes(outfile):
            'Actionability' in gtrHash[geneSym] or 'GCEP' in gtrHash[geneSym]:
             worksheet.write(row, 0, geneSym)
             worksheet.write(row, 1, gtrHash[geneSym]['GeneID'])
-            if 'geneCount' in gtrHash[geneSym].keys():
-                worksheet.write(row, 2, gtrHash[geneSym]['geneCount'])
+
+            if 'CGgeneCount' in gtrHash[geneSym].keys():
+                worksheet.write(row, 2, gtrHash[geneSym]['CGgeneCount'])
             else:
                 worksheet.write(row, 2, 0)
 
-            if 'Indications' in gtrHash[geneSym].keys():
-                worksheet.write(row, 3, '| '.join(sorted(set(gtrHash[geneSym]['Indications']))))
+            if 'geneCount' in gtrHash[geneSym].keys():
+                worksheet.write(row, 3, gtrHash[geneSym]['geneCount'])
             else:
-                worksheet.write(row, 3, '-')
+                worksheet.write(row, 3, 0)
 
-            if 'Conditions' in gtrHash[geneSym].keys():
-                worksheet.write(row, 4, ' | '.join(sorted(set(gtrHash[geneSym]['Conditions']))))
+            if 'Indications' in gtrHash[geneSym].keys():
+                worksheet.write(row, 4, '| '.join(sorted(set(gtrHash[geneSym]['Indications']))))
             else:
                 worksheet.write(row, 4, '-')
 
-            if 'TestNames' in gtrHash[geneSym].keys():
-                worksheet.write(row, 5, ' | '.join(sorted(set(gtrHash[geneSym]['TestNames']))))
+            if 'Conditions' in gtrHash[geneSym].keys():
+                worksheet.write(row, 5, ' | '.join(sorted(set(gtrHash[geneSym]['Conditions']))))
             else:
                 worksheet.write(row, 5, '-')
 
-            if 'LabNames' in gtrHash[geneSym].keys():
-                worksheet.write(row, 6, ' | '.join(sorted(set(gtrHash[geneSym]['LabNames']))))
+            if 'TestNames' in gtrHash[geneSym].keys():
+                worksheet.write(row, 6, ' | '.join(sorted(set(gtrHash[geneSym]['TestNames']))))
             else:
                 worksheet.write(row, 6, '-')
 
-            if 'VarCount' in gtrHash[geneSym].keys():
-                worksheet.write(row, 7, gtrHash[geneSym]['VarCount'])
+            if 'LabNames' in gtrHash[geneSym].keys():
+                worksheet.write(row, 7, ' | '.join(sorted(set(gtrHash[geneSym]['LabNames']))))
             else:
-                worksheet.write(row, 7, 0)
+                worksheet.write(row, 7, '-')
 
-            if 'VarCountP' in gtrHash[geneSym].keys():
-                worksheet.write(row, 8, gtrHash[geneSym]['VarCountP'])
+            if 'VarCount' in gtrHash[geneSym].keys():
+                worksheet.write(row, 8, gtrHash[geneSym]['VarCount'])
             else:
                 worksheet.write(row, 8, 0)
 
-            if 'VarCountC' in gtrHash[geneSym].keys():
-                worksheet.write(row, 9, gtrHash[geneSym]['VarCountC'])
+            if 'VarCountP' in gtrHash[geneSym].keys():
+                worksheet.write(row, 9, gtrHash[geneSym]['VarCountP'])
             else:
                 worksheet.write(row, 9, 0)
 
-            if 'MANEstatus' in gtrHash[geneSym].keys():
-                worksheet.write(row, 10, gtrHash[geneSym]['MANEstatus'])
+            if 'VarCountC' in gtrHash[geneSym].keys():
+                worksheet.write(row, 10, gtrHash[geneSym]['VarCountC'])
             else:
-                worksheet.write(row, 10, '-')
+                worksheet.write(row, 10, 0)
 
-            if 'MIM#' in gtrHash[geneSym].keys():
-                worksheet.write(row, 11, ' | '.join(sorted(set(gtrHash[geneSym]['MIM#']))))
+            if 'MANEstatus' in gtrHash[geneSym].keys():
+                worksheet.write(row, 11, gtrHash[geneSym]['MANEstatus'])
             else:
                 worksheet.write(row, 11, '-')
 
-            if 'Diseases' in gtrHash[geneSym].keys():
-                worksheet.write(row, 12, ' | '.join(sorted(set(gtrHash[geneSym]['Diseases']))))
+            if 'MIM#' in gtrHash[geneSym].keys():
+                worksheet.write(row, 12, ' | '.join(sorted(set(gtrHash[geneSym]['MIM#']))))
             else:
                 worksheet.write(row, 12, '-')
 
-            if 'VCEP' in gtrHash[geneSym].keys():
-                worksheet.write(row, 13, gtrHash[geneSym]['VCEP'])
+            if 'Diseases' in gtrHash[geneSym].keys():
+                worksheet.write(row, 13, ' | '.join(sorted(set(gtrHash[geneSym]['Diseases']))))
             else:
                 worksheet.write(row, 13, '-')
 
-            if 'GCEP' in gtrHash[geneSym].keys():
-                worksheet.write(row, 14, ' | '.join(sorted(set(gtrHash[geneSym]['GCEP']))))
+            if 'VCEP' in gtrHash[geneSym].keys():
+                worksheet.write(row, 14, gtrHash[geneSym]['VCEP'])
             else:
                 worksheet.write(row, 14, '-')
 
-            if 'GCEP_status' in gtrHash[geneSym].keys():
-                if 'Approved' in gtrHash[geneSym]['GCEP_status']:
-                    worksheet.write(row, 15, 'Approved')
-                elif 'Provisional' in gtrHash[geneSym]['GCEP_status']:
-                    worksheet.write(row, 15, 'Provisional')
-                elif 'In progress' in gtrHash[geneSym]['GCEP_status']:
-                    worksheet.write(row, 15, 'In progress')
-                else:
-                    worksheet.write(row, 15, 'Not started')
+            if 'GCEP' in gtrHash[geneSym].keys():
+                worksheet.write(row, 15, ' | '.join(sorted(set(gtrHash[geneSym]['GCEP']))))
             else:
                 worksheet.write(row, 15, '-')
 
-            if 'Validity' in gtrHash[geneSym].keys():
-                worksheet.write(row, 16, ' | '.join(sorted(gtrHash[geneSym]['Validity'], key=MyFn)))
+            if 'GCEP_status' in gtrHash[geneSym].keys():
+                if 'Approved' in gtrHash[geneSym]['GCEP_status']:
+                    worksheet.write(row, 16, 'Approved')
+                elif 'Provisional' in gtrHash[geneSym]['GCEP_status']:
+                    worksheet.write(row, 16, 'Provisional')
+                elif 'In progress' in gtrHash[geneSym]['GCEP_status']:
+                    worksheet.write(row, 16, 'In progress')
+                else:
+                    worksheet.write(row, 16, 'Not started')
             else:
                 worksheet.write(row, 16, '-')
 
-            if 'Dosage' in gtrHash[geneSym].keys():
-                worksheet.write(row, 17, gtrHash[geneSym]['Dosage'])
+            if 'Validity' in gtrHash[geneSym].keys():
+                worksheet.write(row, 17, ' | '.join(sorted(gtrHash[geneSym]['Validity'], key=MyFn)))
             else:
                 worksheet.write(row, 17, '-')
 
-            if 'Actionability' in gtrHash[geneSym].keys():
-                worksheet.write(row, 18, gtrHash[geneSym]['Actionability'])
+            if 'Dosage' in gtrHash[geneSym].keys():
+                worksheet.write(row, 18, gtrHash[geneSym]['Dosage'])
             else:
                 worksheet.write(row, 18, '-')
 
-            if 'Manifestations' in gtrHash[geneSym].keys():
-                worksheet.write(row, 19, gtrHash[geneSym]['Manifestations'])
+            if 'Actionability' in gtrHash[geneSym].keys():
+                worksheet.write(row, 19, gtrHash[geneSym]['Actionability'])
             else:
                 worksheet.write(row, 19, '-')
 
-            i = 20
+            if 'Manifestations' in gtrHash[geneSym].keys():
+                worksheet.write(row, 20, gtrHash[geneSym]['Manifestations'])
+            else:
+                worksheet.write(row, 20, '-')
+
+            i = 21
             count = 0
             if 'Manifestations' in gtrHash[geneSym].keys():
                 manifestations = [x.strip() for x in gtrHash[geneSym]['Manifestations'].split(';') if x != '']
@@ -725,7 +754,7 @@ def print_allgenes(outfile):
 def print_stats(workbook, worksheet, diseaseHash):
     '''This function writes the stats for gene tests per disease areas'''
 
-    worksheet.write(0, 0, '#Tests with >= number of genes below:')
+    worksheet.write(0, 0, '#GTR tests with >= number of genes below:')
 
     j = 1
     for organ in osystems:
@@ -753,33 +782,36 @@ def main():
 
     sourceFile0 = 'Gene2GeneIDSyns.txt' #From HGNC genenames.org downloads (Gene Symbol, Synonyms, NCBI GeneID)
     sourceFile1 = 'gene_info_human.txt' #From: https://ftp.ncbi.nih.gov/gene/DATA/gene_info extracted '9606'
+
     inputFile1 = 'test_version_20181206.txt' #From https://ftp.ncbi.nih.gov/pub/GTR/data/_README.html
     inputFile2 = 'variant_summary.txt' #From ftp://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/ 1/29/19
     inputFile3 = 'mimTitles.txt' #From https://www.omim.org/downloads/
     inputFile4 = 'mim2gene_medgen.txt' #From https://www.omim.org/downloads/
     inputFile5 = 'MANE.GRCh38.v0.5.summary.txt' #From ftp://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/current/
-    inputFile6 = 'VCEPGeneList.txt' #Internal file on DropBox Shared U41/ClinVar/ClinVarReports
+    inputFile6 = 'newVCEPGeneList.txt' #Internal file on DropBox Shared U41/ClinVar/ClinVarReports
     inputFile7 = 'ClinGen-Gene-Disease-Summary-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
     inputFile8 = 'ClinGen-Dosage-Sensitivity-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
     inputFile9 = 'ClinGen-Clinical-Actionability-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
     inputFile10 ='CGD.txt' #From https://research.nhgri.nih.gov/CGD/download/
     inputFile11 = 'curations_export_at_2019-02-01_11_52_06.csv' #From Gene Tracker download (needs log in)
+    inputFile12 = 'Concert_Genetics_1000_Most_Popular_Genes.txt' #Obtained internally
 
     outputFile = 'Gene_Prioritization_Report_Feb_2019.xlsx'
 
     create_gene2idlookup1(sourceFile0)
     create_gene2idlookup2(sourceFile1)
     create_gtrHash(inputFile1)
+    add_ConcertGenetics(inputFile12)
     add_VarCounts(inputFile2)
     create_omimHash(inputFile3)
     add_OMIMID(inputFile4)
     add_MANEflag(inputFile5)
     add_VCEPs(inputFile6)
+    add_GCEPs(inputFile11)
     add_GeneValidity(inputFile7)
     add_GeneDosage(inputFile8)
     add_Actionability(inputFile9)
     add_CGD(inputFile10)
-    add_GCEPs(inputFile11)
     get_stats()
 
     print_allgenes(outputFile)
