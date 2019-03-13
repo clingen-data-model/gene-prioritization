@@ -1,17 +1,17 @@
 # GenePrioritization
 Python script to generate Gene Prioritization Reports for ClinGen curation.
 
-
 ## About this project
 This script generates an Excel file with a row for each gene that has one of the following:
-  * a) at least one ClinVar 1-star variant
-  * b) a + or # OMIMID
-  * c) a MANE RefSeq transcript
-  * d) a VCEP
-  * e) a GCEP
-  * f) a Clinical Validity curation
-  * g) a Gene Dosage curation
-  * h) an Actionability curation
+* a) at least one test in the GTR
+* b) at least one ClinVar variant
+* c) a + or # OMIMID
+* d) a MANE RefSeq transcript
+* e) a VCEP
+* f) a GCEP
+* g) a Clinical Validity curation
+* h) a Gene Dosage curation
+* i) an Actionability curation
 
 This script uses the following files:
   * 'Gene2GeneIDSyns.txt' - From HGNC genenames.org downloads (Gene Symbol, Synonyms, NCBI GeneID)
@@ -27,6 +27,7 @@ This script uses the following files:
   * 'ClinGen-Clinical-Actionability-2019-02-04.csv' - From https://search.clinicalgenome.org/kb/ - Manually removed header rows
   * 'CGD.txt' - From https://research.nhgri.nih.gov/CGD/download/
   * 'curations_export_at_2019-02-01_11_52_06.csv' - From Gene Tracker download (needs log in)
+  * 'Concert_Genetics_1000_Most_Popular_Genes.txt' - Obtained internally
 
 **Gene_Prioritization_Report.py**
   * Tab#GTR_REPORT: main file
