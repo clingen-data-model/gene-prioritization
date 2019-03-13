@@ -1,15 +1,3 @@
-#Must run as >python3 Gene_Prioritization_Report.py
-#This script outputs an Excel file with a row for each gene that has one of the following:
-#a) at least one ClinVar 1-star variant
-#b) a + or # OMIMID
-#c) a MANE RefSeq transcript
-#d) a VCEP
-#e) a GCEP
-#f) a Clinical Validity curation
-#g) a Gene Dosage curation
-#h) an Actionability curation
-#This script also outputs two stats tabs based on number of tests per gene and disease area(s)
-
 import re
 import pprint
 import csv
