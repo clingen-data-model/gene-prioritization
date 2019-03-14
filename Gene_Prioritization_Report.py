@@ -1,6 +1,7 @@
 import re
 import pprint
 import csv
+import gzip
 import xlsxwriter
 
 gtrHash = {}
@@ -22,22 +23,25 @@ def create_gene2idlookup1(infile):
                 col = re.split(r'\t', line) #split on tabs
                 if not col[0] == '': #ignore empty lines
                     geneSym = col[0].upper()
-                    synonyms = col[1]
-                    geneID = col[2].rstrip('\n\r')
+                    previous = col[1].upper()
+                    synonyms = col[2].upper()
+                    geneID = col[3].rstrip('\n\r')
                     if geneID and geneID != '':
                         geneID = int(geneID)
                         gtrHash[geneSym] = {'GeneID':geneID}
                         if synonyms != '':
-                            gtrHash[geneSym].update({'Synonyms':col[1].split(', ')})
+                            gtrHash[geneSym].update({'Synonyms':synonyms.split(', ')})
+                        if previous != '':
+                            gtrHash[geneSym].update({'Previous':previous.split(', ')})
 
     input.close()
     return(gtrHash)
 
 
-def create_gene2idlookup2(infile):
+def create_gene2idlookup2(gzfile):
     '''This function adds to the lookup, GeneSym to GeneID for additional NCBI Genes'''
 
-    with open(infile, 'rt') as input:
+    with gzip.open(gzfile, 'rt') as input:
         line = input.readline()
 
         while line:
@@ -48,8 +52,18 @@ def create_gene2idlookup2(infile):
                 if col[0] != '':
                     geneID = int(col[1])
                     geneSym = col[2].upper()
+                    synonyms = col[4].upper()
                     if geneID and geneID != '' and geneSym not in gtrHash.keys():
                         gtrHash[geneSym] = {'GeneID':geneID}
+
+                    if synonyms != '-':
+                        if 'Synonyms' not in gtrHash.keys():
+                            gtrHash[geneSym].update({'Synonyms':synonyms.split('|')})
+
+                        else:
+                            for sym in synonyms.split('|'):
+                                if sym not in gtrHash[geneSym]['Synonyms']:
+                                    gtrHash[geneSym].update(['Synonyms'].append(sym))
 
     input.close()
     return(gtrHash)
@@ -58,19 +72,7 @@ def create_gene2idlookup2(infile):
 def gene_convert(gene):
     '''This function converts geneSyms in the GTR that are not in the gtrHash'''
 
-    if gene == 'GS1-259H13.2':
-        return('TMEM225B')
-    elif gene == 'NARR':
-        return('RAB34')
-    elif gene == 'CH17-360D5.1':
-        return('NPY4R2')
-    elif gene == 'CRHR1-IT1-CRHR1':
-        return('LINC02210-CRHR1')
-    elif gene == 'HMP19':
-        return('NSG2')
-    elif gene == 'WTH3DI':
-        return('RAB6D')
-    elif gene == 'LOC200726':
+    if gene == 'LOC200726':
         return('FAM237A')
     elif gene == 'LOC100132146':
         return('FAM240A')
@@ -84,10 +86,6 @@ def gene_convert(gene):
         return('TEX48')
     elif gene == 'LOC100129216':
         return('DEFB131B')
-    elif gene == 'LOC653602':
-        return('FAM84A')
-    elif gene == 'CCNA2':
-        return('CCNA2')
     else:
         return(gene)
 
@@ -95,28 +93,41 @@ def gene_convert(gene):
 def gene_check(gene):
     '''This function checks if the geneSym in the GTR is currently approved or assigns based on unique synonym'''
 
-    if gene.upper() in gtrHash.keys():
+    if gene in gtrHash:
         return(gene)
+
     else:
         count = 0
-        for record in gtrHash:
-            if 'Synonyms' in gtrHash[record].keys():
-                for syn in gtrHash[record]['Synonyms']:
-                    if gene == syn.upper():
+        for geneSym in gtrHash:
+            if 'Previous' in gtrHash[geneSym]:
+                for prev in gtrHash[geneSym]['Previous']:
+                    if gene == prev:
                         count +=  1
-                        gene = record
+                        newGene = geneSym
         if count == 1:
-            return(gene)
+            return(newGene)
+
         else:
-            return('Not found: ' + gene)
+            count = 0
+            for geneSym in gtrHash:
+                if 'Synonyms' in gtrHash[geneSym]:
+                    for syn in gtrHash[geneSym]['Synonyms']:
+                        if gene == syn:
+                            count +=  1
+                            newGene = geneSym
+            if count == 1:
+                return(newGene)
+
+            else:
+                return('Not found: ' + gene)
 
 
-def create_gtrHash(infile):
+def create_gtrHash(gzfile):
     '''This function makes a hash of metadata for each GeneSym in the GTR registry'''
 
     unique_tests = []
 
-    with open(infile, 'rt') as input:
+    with gzip.open(gzfile, 'rt') as input:
         line = input.readline()
 
         while line:
@@ -373,6 +384,8 @@ def add_GCEPs(infile):
                 geneSym = 'PHGDH'
             if geneSym == 'SYN4':
                 geneSym = 'SNTG1'
+            if geneSym == 'RECQL2':
+                geneSym = 'WRN'
             if geneSym != 'GCS' and '(' not in geneSym and geneSym != 'AGL1' and \
                geneSym != 'PCC' and geneSym != 'MAT' and geneSym != '3PSPH' and \
                geneSym != 'ALD18A1':
@@ -494,12 +507,12 @@ def add_Actionability(infile):
     return(gtrHash)
 
 
-def add_CGD(infile):
+def add_CGD(gzfile):
     '''This function adds the manifestation categories of CGD status to the GTR hash'''
 
     global osystems
 
-    with open(infile, 'rt') as input:
+    with gzip.open(gzfile, 'rt') as input:
         line = input.readline()
 
         while line:
@@ -780,23 +793,23 @@ def print_stats(workbook, worksheet, diseaseHash):
 
 def main():
 
-    sourceFile0 = 'Gene2GeneIDSyns.txt' #From HGNC genenames.org downloads (Gene Symbol, Synonyms, NCBI GeneID)
-    sourceFile1 = 'gene_info_human.txt' #From: https://ftp.ncbi.nih.gov/gene/DATA/gene_info extracted '9606'
+    sourceFile0 = 'Gene2GeneIDSyns.txt' #From: https://www.genenames.org/download/custom/ (Gene Symbol, Previous Gene Symbol, Synonyms, NCBI GeneID, Approved)
+    sourceFile1 = 'Homo_sapiens.gene_info.gz' #From: https://ftp.ncbi.nih.gov/gene/DATA/GENE_INFO/Mammalia/
 
-    inputFile1 = 'test_version_20181206.txt' #From https://ftp.ncbi.nih.gov/pub/GTR/data/_README.html
-    inputFile2 = 'variant_summary.txt' #From ftp://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/ 1/29/19
-    inputFile3 = 'mimTitles.txt' #From https://www.omim.org/downloads/
-    inputFile4 = 'mim2gene_medgen.txt' #From https://www.omim.org/downloads/
+    inputFile1 = 'test_version.gz' #From https://ftp.ncbi.nih.gov/pub/GTR/data/
+    inputFile2 = 'variant_summary.txt' #From ftp://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/ 3/14/19
+    inputFile3 = 'mimTitles.txt' #From https://www.omim.org/downloads/ 3/14/19
+    inputFile4 = 'mim2gene_medgen.txt' #From ftp://ftp.ncbi.nih.gov/gene/DATA/ 3/14/19
     inputFile5 = 'MANE.GRCh38.v0.5.summary.txt' #From ftp://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/current/
-    inputFile6 = 'newVCEPGeneList.txt' #Internal file on DropBox Shared U41/ClinVar/ClinVarReports
-    inputFile7 = 'ClinGen-Gene-Disease-Summary-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
-    inputFile8 = 'ClinGen-Dosage-Sensitivity-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
-    inputFile9 = 'ClinGen-Clinical-Actionability-2019-02-04.csv' #From https://search.clinicalgenome.org/kb/ - Manually removed header rows
-    inputFile10 ='CGD.txt' #From https://research.nhgri.nih.gov/CGD/download/
-    inputFile11 = 'curations_export_at_2019-02-01_11_52_06.csv' #From Gene Tracker download (needs log in)
+    inputFile6 = 'VCEPGeneList.txt' #Internal file on DropBox Shared U41/ClinVar/ClinVarReports
+    inputFile7 = 'ClinGen-Gene-Disease-Summary-2019-03-14.csv' #From https://search.clinicalgenome.org/kb/gene-validity.csv - Manually removed header rows
+    inputFile8 = 'ClinGen-Dosage-Sensitivity-2019-03-14.csv' #From https://search.clinicalgenome.org/kb/gene-dosage.csv -  Manually removed header rows
+    inputFile9 = 'ClinGen-Clinical-Actionability-2019-03-14.csv' #From https://search.clinicalgenome.org/kb/actionability.csv - Manually removed header rows
+    inputFile10 ='CGD.txt.gz' #From https://research.nhgri.nih.gov/CGD/download/txt/
+    inputFile11 = 'curations_export_at_2019-03-14_09_25_28.csv' #From https://clingen.sirs.unc.edu/#/curations/export (needs log in)
     inputFile12 = 'Concert_Genetics_1000_Most_Popular_Genes.txt' #Obtained internally
 
-    outputFile = 'Gene_Prioritization_Report_Feb_2019.xlsx'
+    outputFile = 'Gene_Prioritization_Report_March_2019.xlsx'
 
     create_gene2idlookup1(sourceFile0)
     create_gene2idlookup2(sourceFile1)
